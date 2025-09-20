@@ -131,25 +131,21 @@ export default function ResultsDisplay({ prediction, loading, compact }: Results
 
   if (loading) {
     return (
-      <Animated.View style={[styles.container, { transform: [{ scale: pulseAnim }] }]}>
-        <View style={styles.loadingContainer}>
-          <Animated.View style={[styles.loadingSpinner, { transform: [{ rotate: rotateInterpolate }] }]} />
-          <Text style={styles.loadingText}>
-            Analyzing video...
-          </Text>
-        </View>
+      <Animated.View style={[styles.contentContainer, { transform: [{ scale: pulseAnim }] }]}>
+        <Animated.View style={[styles.loadingSpinner, { transform: [{ rotate: rotateInterpolate }] }]} />
+        <Text style={styles.loadingText}>
+          Analyzing video...
+        </Text>
       </Animated.View>
     );
   }
 
   if (!prediction) {
     return (
-      <Animated.View style={[styles.container, { opacity: glowOpacity }]}>
-        <View style={styles.placeholderContainer}>
-          <Text style={styles.placeholderText}>
-            Results will appear here
-          </Text>
-        </View>
+      <Animated.View style={[styles.contentContainer, { opacity: glowOpacity }]}>
+        <Text style={styles.placeholderText}>
+          Results will appear here
+        </Text>
       </Animated.View>
     );
   }
@@ -239,49 +235,25 @@ export default function ResultsDisplay({ prediction, loading, compact }: Results
   });
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <View style={styles.resultContainer}>
-        <Animated.Text style={[styles.emojiText, { opacity: fadeAnim }]}>
-          {emoji}
-        </Animated.Text>
-        <Animated.Text style={[styles.activityText, { opacity: fadeAnim }]}>
-          {formattedName}
-        </Animated.Text>
-      </View>
+    <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
+      <Animated.Text style={[styles.emojiText, { opacity: fadeAnim }]}>
+        {emoji}
+      </Animated.Text>
+      <Animated.Text style={[styles.activityText, { opacity: fadeAnim }]}>
+        {formattedName}
+      </Animated.Text>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'relative' as const,
-    minHeight: Math.min(Math.floor(height * 0.5), 480),
-    width: Platform.OS === 'web' ? '100%' : undefined,
-    maxWidth: Platform.OS === 'web' ? 600 : undefined,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    marginTop: Platform.OS === 'web' ? 20 : 24,
-    marginHorizontal: Platform.OS === 'web' ? 0 : 20,
-    marginBottom: Platform.OS === 'web' ? 60 : 40,
-    alignSelf: 'center',
-    overflow: 'hidden' as const,
-    borderWidth: 2,
-    borderColor: '#E5E5E5',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  
-  loadingContainer: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: '#FFFFFF',
+  contentContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   
   loadingSpinner: {
@@ -301,48 +273,27 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'web' ? 'system-ui, sans-serif' : 'System',
   },
   
-  placeholderContainer: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    backgroundColor: '#FFFFFF',
-  },
-  
   placeholderText: {
     color: '#999999',
-    fontSize: 18,
-    fontWeight: '300' as const,
+    fontSize: 16,
+    fontWeight: '400' as const,
     textAlign: 'center' as const,
     fontFamily: Platform.OS === 'web' ? 'system-ui, sans-serif' : 'System',
   },
   
-  resultContainer: {
-    flex: 1,
-    width: '100%',
-    padding: 40,
-    paddingBottom: 80,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    backgroundColor: '#FFFFFF',
-  },
-  
   emojiText: {
-    fontSize: 64,
+    fontSize: 48,
     textAlign: 'center' as const,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   
   activityText: {
     color: '#000000',
-    fontSize: Platform.OS === 'web' ? 36 : 32,
-    fontWeight: '700' as const,
+    fontSize: Platform.OS === 'web' ? 24 : 20,
+    fontWeight: '600' as const,
     textAlign: 'center' as const,
-    lineHeight: Platform.OS === 'web' ? 44 : 40,
-    fontFamily: Platform.OS === 'web' ? 'Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif' : 'System',
-    letterSpacing: -0.5,
+    lineHeight: Platform.OS === 'web' ? 32 : 28,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, sans-serif' : 'System',
+    letterSpacing: -0.2,
   },
 });
