@@ -159,6 +159,10 @@ export default function VideoUpload() {
                 <video
                   src={videoUri}
                   controls
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   style={styles.videoPlayer}
                   poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='50' font-family='system-ui' font-size='14' fill='%23666' text-anchor='middle' dominant-baseline='middle'%3E▶️%3C/text%3E%3C/svg%3E"
                 />
@@ -173,10 +177,12 @@ export default function VideoUpload() {
             {/* Results */}
             <View style={styles.resultsContainer}>
               <Text style={styles.sectionTitle}>Analysis Results</Text>
-              <ResultsDisplay 
-                prediction={result} 
-                loading={uploading}
-              />
+              <View style={styles.resultsBox}>
+                <ResultsDisplay 
+                  prediction={result} 
+                  loading={uploading}
+                />
+              </View>
             </View>
           </View>
         )}
@@ -287,12 +293,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   videoContainer: {
-    flex: 1,
-    minWidth: Platform.OS === 'web' ? 350 : '100%',
+    width: Platform.OS === 'web' ? 560 : '100%',
   },
   resultsContainer: {
-    flex: 1,
-    minWidth: Platform.OS === 'web' ? 350 : '100%',
+    width: Platform.OS === 'web' ? 560 : '100%',
     justifyContent: 'flex-start',
     alignItems: 'stretch',
   },
@@ -306,14 +310,15 @@ const styles = StyleSheet.create({
   },
   videoPlayer: {
     width: '100%',
-    height: Platform.OS === 'web' ? 280 : 200,
+    height: Platform.OS === 'web' ? 315 : 200,
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
     border: Platform.OS === 'web' ? '2px solid #e5e7eb' : undefined,
+    objectFit: 'cover',
   },
   videoPlayerPlaceholder: {
     width: '100%',
-    height: 280,
+    height: 315,
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
     borderWidth: 2,
@@ -334,5 +339,15 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     textAlign: 'center',
     fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  resultsBox: {
+    width: '100%',
+    height: 315,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: Platform.OS === 'web' ? 2 : 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+    padding: 12,
   },
 });
