@@ -6,9 +6,9 @@
 import { ActivityPrediction, VideoUploadResponse, WSMessage, UploadProgress } from '../types';
 
 // Configuration
-// For production (Vercel), disable API calls since there's no backend deployed
+// For production (Vercel), use tunnel URL or disable API calls
 const getApiBaseUrl = () => {
-  // Check for explicit API URL from environment
+  // Check for explicit API URL from environment (for tunnel URLs)
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
@@ -18,7 +18,15 @@ const getApiBaseUrl = () => {
     return 'http://localhost:8000';
   }
   
-  // For production deployment, return null to disable API calls
+  // TUNNEL URL: Replace null with your ngrok URL to connect Vercel to localhost
+  // Example: 'https://abc123.ngrok.io'
+  const TUNNEL_URL = null;
+  if (TUNNEL_URL) {
+    console.log('🌐 Using tunnel URL:', TUNNEL_URL);
+    return TUNNEL_URL;
+  }
+  
+  // For production deployment without tunnel, return null to disable API calls
   return null;
 };
 

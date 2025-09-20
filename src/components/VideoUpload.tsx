@@ -12,6 +12,7 @@ export default function VideoUpload() {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<VideoUploadResponse | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [videoUri, setVideoUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   // Animation refs
@@ -57,8 +58,9 @@ export default function VideoUpload() {
             setError(null);
             // Create object URL for ApiService to fetch and convert to blob
             const url = URL.createObjectURL(file);
+            setVideoUri(url); // Store for video preview
             await uploadVideo(url);
-            URL.revokeObjectURL(url);
+            // Don't revoke URL yet - we need it for video preview
           }
         };
         input.click();
@@ -74,6 +76,7 @@ export default function VideoUpload() {
         setSelectedFile(res.assets[0].name);
         setResult(null);
         setError(null);
+        setVideoUri(res.assets[0].uri); // Store for video preview
         await uploadVideo(res.assets[0].uri);
       }
     } catch (error) {
@@ -146,13 +149,37 @@ export default function VideoUpload() {
           </View>
         )}
 
-        {/* Results */}
-        <View style={styles.resultsContainer}>
-          <ResultsDisplay 
-            prediction={result} 
-            loading={uploading}
-          />
-        </View>
+        {/* Video Preview & Results */}
+        {videoUri && (
+          <View style={styles.contentContainer}>
+            {/* Video Preview */}
+            <View style={styles.videoContainer}>
+              <Text style={styles.sectionTitle}>Uploaded Video</Text>
+              {Platform.OS === 'web' ? (
+                <video
+                  src={videoUri}
+                  controls
+                  style={styles.videoPlayer}
+                  poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='50' font-family='system-ui' font-size='14' fill='%23666' text-anchor='middle' dominant-baseline='middle'%3E▶️%3C/text%3E%3C/svg%3E"
+                />
+              ) : (
+                <View style={styles.videoPlayerPlaceholder}>
+                  <Text style={styles.videoPlayerText}>Video Preview</Text>
+                  <Text style={styles.videoPlayerSubtext}>▶️ {selectedFile}</Text>
+                </View>
+              )}
+            </View>
+            
+            {/* Results */}
+            <View style={styles.resultsContainer}>
+              <Text style={styles.sectionTitle}>Analysis Results</Text>
+              <ResultsDisplay 
+                prediction={result} 
+                loading={uploading}
+              />
+            </View>
+          </View>
+        )}
       </View>
     </Animated.View>
   );
@@ -253,11 +280,59 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
   },
+  contentContainer: {
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    gap: 20,
+    marginTop: 20,
+    alignItems: 'flex-start',
+  },
+  videoContainer: {
+    flex: 1,
+    minWidth: Platform.OS === 'web' ? 350 : '100%',
+  },
   resultsContainer: {
     flex: 1,
-    marginTop: 20,
+    minWidth: Platform.OS === 'web' ? 350 : '100%',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 16,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  videoPlayer: {
+    width: '100%',
+    height: Platform.OS === 'web' ? 280 : 200,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    border: Platform.OS === 'web' ? '2px solid #e5e7eb' : undefined,
+  },
+  videoPlayerPlaceholder: {
+    width: '100%',
+    height: 280,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 300,
+  },
+  videoPlayerText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#6b7280',
+    marginBottom: 4,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  videoPlayerSubtext: {
+    fontSize: 14,
+    color: '#9ca3af',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
   },
 });
