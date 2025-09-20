@@ -1,13 +1,25 @@
 {
+  "version": 2,
   "buildCommand": "npm ci && npx expo export -p web",
   "outputDirectory": "dist",
   "devCommand": "npm run web",
   "installCommand": "npm ci",
   "framework": null,
+  "functions": {},
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [
