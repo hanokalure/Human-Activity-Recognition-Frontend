@@ -82,7 +82,7 @@ export default function App() {
         <Animated.View style={[styles.errorContent, { opacity: fadeAnim }]}>
           <Text style={styles.errorTitle}>Server Unavailable</Text>
           <Text style={styles.errorMessage}>
-            Please ensure the FastAPI backend is running on localhost:8000
+            Cannot connect to the backend server. Please check your connection.
           </Text>
           <TouchableOpacity style={styles.retryButton} onPress={checkApiHealth}>
             <Text style={styles.retryButtonText}>Retry Connection</Text>
