@@ -6,8 +6,24 @@
 import { ActivityPrediction, VideoUploadResponse, WSMessage, UploadProgress } from '../types';
 
 // Configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
-const WS_BASE_URL = API_BASE_URL.replace('http', 'ws');
+// For production (Vercel), disable API calls since there's no backend deployed
+const getApiBaseUrl = () => {
+  // Check for explicit API URL from environment
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  
+  // For local development, use localhost
+  if (process.env.NODE_ENV === 'development' || typeof window === 'undefined' || window.location.hostname === 'localhost') {
+    return 'http://localhost:8000';
+  }
+  
+  // For production deployment, return null to disable API calls
+  return null;
+};
+
+const API_BASE_URL = getApiBaseUrl();
+const WS_BASE_URL = API_BASE_URL ? API_BASE_URL.replace('http', 'ws') : null;
 
 export class ApiService {
   /**
@@ -17,6 +33,11 @@ export class ApiService {
     fileUri: string,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<VideoUploadResponse> {
+    // Check if API is available
+    if (!API_BASE_URL) {
+      throw new Error('API not available in production. Please run the backend locally and access via localhost.');
+    }
+
     const formData = new FormData();
 
     // Handle web vs native differently
@@ -60,6 +81,11 @@ export class ApiService {
    * Check API health
    */
   static async healthCheck(): Promise<{ status: string; model_loaded: boolean }> {
+    // If no API URL configured, return unhealthy status
+    if (!API_BASE_URL) {
+      throw new Error('Backend not configured. Access via localhost for full functionality.');
+    }
+
     const response = await fetch(`${API_BASE_URL}/health`);
     if (!response.ok) {
       throw new Error('API health check failed');
@@ -96,6 +122,11 @@ export class FrameStreamClient {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
+        if (!WS_BASE_URL) {
+          reject(new Error('WebSocket not available in production'));
+          return;
+        }
+
         this.ws = new WebSocket(`${WS_BASE_URL}/ws/frames`);
         
         this.ws.onopen = () => {
