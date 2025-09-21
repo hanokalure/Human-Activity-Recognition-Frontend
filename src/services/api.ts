@@ -6,28 +6,17 @@
 import { ActivityPrediction, VideoUploadResponse, WSMessage, UploadProgress } from '../types';
 
 // Configuration
-// For production (Vercel), use tunnel URL or disable API calls
+// Use environment variable or fallback to localhost for development
 const getApiBaseUrl = () => {
-  // Check for explicit API URL from environment (for tunnel URLs)
+  // Always check environment variable first
   if (process.env.EXPO_PUBLIC_API_URL) {
+    console.log('🌐 Using API URL from environment:', process.env.EXPO_PUBLIC_API_URL);
     return process.env.EXPO_PUBLIC_API_URL;
   }
   
-  // For local development, use localhost
-  if (process.env.NODE_ENV === 'development' || typeof window === 'undefined' || window.location.hostname === 'localhost') {
-    return 'http://localhost:8000';
-  }
-  
-  // TUNNEL URL: Replace null with your ngrok URL to connect Vercel to localhost
-  // Example: 'https://abc123.ngrok.io'
-  const TUNNEL_URL = null;
-  if (TUNNEL_URL) {
-    console.log('🌐 Using tunnel URL:', TUNNEL_URL);
-    return TUNNEL_URL;
-  }
-  
-  // For production deployment without tunnel, return null to disable API calls
-  return null;
+  // Fallback to localhost for development
+  console.log('🔧 Falling back to localhost for development');
+  return 'http://localhost:8000';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -43,7 +32,7 @@ export class ApiService {
   ): Promise<VideoUploadResponse> {
     // Check if API is available
     if (!API_BASE_URL) {
-      throw new Error('API not available in production. Please run the backend locally and access via localhost.');
+      throw new Error('Backend URL not configured. Please set EXPO_PUBLIC_API_URL environment variable.');
     }
 
     const formData = new FormData();
@@ -67,8 +56,8 @@ export class ApiService {
       } as any);
     }
 
-    console.log('[ApiService] Uploading to', `${API_BASE_URL}/predict/video`);
-    const response = await fetch(`${API_BASE_URL}/predict/video`, {
+    console.log('[ApiService] Uploading to', `${API_BASE_URL}/predict`);
+    const response = await fetch(`${API_BASE_URL}/predict`, {
       method: 'POST',
       body: formData,
       // Do NOT set Content-Type manually; let fetch set the boundary
@@ -91,7 +80,7 @@ export class ApiService {
   static async healthCheck(): Promise<{ status: string; model_loaded: boolean }> {
     // If no API URL configured, return unhealthy status
     if (!API_BASE_URL) {
-      throw new Error('Backend not configured. Access via localhost for full functionality.');
+      throw new Error('Backend URL not configured. Please set EXPO_PUBLIC_API_URL environment variable.');
     }
 
     const response = await fetch(`${API_BASE_URL}/health`);
