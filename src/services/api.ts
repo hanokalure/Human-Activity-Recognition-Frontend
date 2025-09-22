@@ -5,11 +5,11 @@
 
 import { ActivityPrediction, VideoUploadResponse, WSMessage, UploadProgress } from '../types';
 
-// Configuration - Local backend for development
-const API_BASE_URL = 'http://127.0.0.1:8000';
-const WS_BASE_URL = 'ws://127.0.0.1:8000';
+// Configuration - Hugging Face Spaces Docker backend
+const API_BASE_URL = 'https://hanokalure-human-activity-backend.hf.space';
+const WS_BASE_URL = 'wss://hanokalure-human-activity-backend.hf.space';
 
-console.log('🌐 Using Local Backend:', API_BASE_URL);
+console.log('🌐 Using Hugging Face Docker Backend:', API_BASE_URL);
 
 export class ApiService {
   /**

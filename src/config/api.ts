@@ -5,7 +5,7 @@
  */
 
 export const API_CONFIG = {
-  BASE_URL: "http://127.0.0.1:8000",
+  BASE_URL: "https://hanokalure-human-activity-backend.hf.space",
   ENDPOINTS: {
     HEALTH: "/health",
     PREDICT: "/predict/video",

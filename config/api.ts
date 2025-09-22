@@ -8,7 +8,7 @@
 
 // Backend API URL configuration - Hardcoded to Hugging Face Spaces
 export const API_CONFIG = {
-  BASE_URL: 'http://127.0.0.1:8000',
+  BASE_URL: 'https://hanokalure-human-activity-backend.hf.space',
   ENDPOINTS: {
     HEALTH: '/health',
     PREDICT_VIDEO: '/predict/video',
