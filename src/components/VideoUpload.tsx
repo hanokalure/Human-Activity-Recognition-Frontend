@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Easing, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Easing, Platform, Dimensions, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as DocumentPicker from 'expo-document-picker';
 import { ApiService } from '../services/api';
@@ -7,6 +7,8 @@ import { VideoUploadResponse } from '../types';
 import ResultsDisplay from './ResultsDisplay';
 
 const { width, height } = Dimensions.get('window');
+const isMobileSmall = width < 400 && Platform.OS !== 'web';
+const panelHeight = Platform.OS === 'web' ? 315 : (isMobileSmall ? 200 : 240);
 
 export default function VideoUpload() {
   const [uploading, setUploading] = useState(false);
@@ -14,6 +16,18 @@ export default function VideoUpload() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Responsive width tracking for mobile vs web layout
+  const [screenWidth, setScreenWidth] = useState(width);
+  useEffect(() => {
+    const sub: any = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenWidth(window.width);
+    });
+    return () => {
+      if (sub && typeof sub.remove === 'function') sub.remove();
+    };
+  }, []);
+  const isSmallScreen = screenWidth < 768;
   
   // Animation refs
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -151,40 +165,69 @@ export default function VideoUpload() {
 
         {/* Video Preview & Results */}
         {videoUri && (
-          <View style={styles.contentContainer}>
-            {/* Video Preview */}
-            <View style={styles.videoContainer}>
-              <Text style={styles.sectionTitle}>Uploaded Video</Text>
-              {Platform.OS === 'web' ? (
-                <video
-                  src={videoUri}
-                  controls
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  style={styles.videoPlayer}
-                  poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='50' font-family='system-ui' font-size='14' fill='%23666' text-anchor='middle' dominant-baseline='middle'%3E▶️%3C/text%3E%3C/svg%3E"
+          isSmallScreen ? (
+            <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+              {/* Video Preview */}
+              <View style={[styles.panelBox, styles.panelSpacing]}>
+                {Platform.OS === 'web' ? (
+                  <video
+                    src={videoUri}
+                    controls
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    style={styles.videoPlayer}
+                    poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='50' font-family='system-ui' font-size='14' fill='%23666' text-anchor='middle' dominant-baseline='middle'%3E▶️%3C/text%3E%3C/svg%3E"
+                  />
+                ) : (
+                  <View style={styles.videoPlayerPlaceholder}>
+                    <Text style={styles.videoPlayerText}>Video Preview</Text>
+                    <Text style={styles.videoPlayerSubtext}>▶️ {selectedFile}</Text>
+                  </View>
+                )}
+              </View>
+              
+              {/* Results */}
+              <View style={styles.panelBox}>
+                <ResultsDisplay 
+                  prediction={result} 
+                  loading={uploading}
                 />
-              ) : (
-                <View style={styles.videoPlayerPlaceholder}>
-                  <Text style={styles.videoPlayerText}>Video Preview</Text>
-                  <Text style={styles.videoPlayerSubtext}>▶️ {selectedFile}</Text>
-                </View>
-              )}
-            </View>
-            
-            {/* Results */}
-            <View style={styles.resultsContainer}>
-              <Text style={styles.sectionTitle}>Analysis Results</Text>
-              <View style={styles.resultsBox}>
+              </View>
+            </ScrollView>
+          ) : (
+            <View style={styles.contentContainerWeb}>
+              {/* Video Preview */}
+              <View style={styles.panelBoxWeb}>
+                {Platform.OS === 'web' ? (
+                  <video
+                    src={videoUri}
+                    controls
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    style={styles.videoPlayer}
+                    poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='50' font-family='system-ui' font-size='14' fill='%23666' text-anchor='middle' dominant-baseline='middle'%3E▶️%3C/text%3E%3C/svg%3E"
+                  />
+                ) : (
+                  <View style={styles.videoPlayerPlaceholder}>
+                    <Text style={styles.videoPlayerText}>Video Preview</Text>
+                    <Text style={styles.videoPlayerSubtext}>▶️ {selectedFile}</Text>
+                  </View>
+                )}
+              </View>
+              
+              {/* Results */}
+              <View style={styles.panelBoxWeb}>
                 <ResultsDisplay 
                   prediction={result} 
                   loading={uploading}
                 />
               </View>
             </View>
-          </View>
+          )
         )}
       </View>
     </Animated.View>
@@ -287,38 +330,75 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
   },
   contentContainer: {
-    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    flexDirection: 'column',
+    gap: 16,
+    marginTop: 20,
+    alignItems: 'stretch',
+    width: '100%',
+  },
+  contentContainerWeb: {
+    flexDirection: 'row',
     gap: 20,
     marginTop: 20,
-    alignItems: 'flex-start',
-  },
-  videoContainer: {
-    width: Platform.OS === 'web' ? 560 : '100%',
-  },
-  resultsContainer: {
-    width: Platform.OS === 'web' ? 560 : '100%',
-    justifyContent: 'flex-start',
     alignItems: 'stretch',
+    width: '100%',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
+  scrollContainer: {
+    flex: 1,
+    marginTop: 20,
+  },
+  scrollContent: {
+    width: '100%',
+    alignItems: 'stretch',
+    paddingBottom: 32,
+  },
+  panelSpacing: {
     marginBottom: 16,
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  panelBox: {
+    width: '100%',
+    height: panelHeight,
+    minHeight: panelHeight,
+    maxHeight: panelHeight,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: Platform.OS === 'web' ? 2 : 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  panelBoxWeb: {
+    flex: 1,
+    maxWidth: 560,
+    width: '100%',
+    height: panelHeight,
+    minHeight: panelHeight,
+    maxHeight: panelHeight,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+    position: 'relative',
   },
   videoPlayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: '100%',
-    height: Platform.OS === 'web' ? 315 : 200,
+    height: '100%',
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    border: Platform.OS === 'web' ? '2px solid #e5e7eb' : undefined,
     objectFit: 'cover',
   },
   videoPlayerPlaceholder: {
-    width: '100%',
-    height: 315,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
     borderWidth: 2,
@@ -339,15 +419,5 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     textAlign: 'center',
     fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
-  },
-  resultsBox: {
-    width: '100%',
-    height: 315,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: Platform.OS === 'web' ? 2 : 1,
-    borderColor: '#e5e7eb',
-    overflow: 'hidden',
-    padding: 12,
   },
 });

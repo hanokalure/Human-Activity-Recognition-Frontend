@@ -248,12 +248,15 @@ export default function ResultsDisplay({ prediction, loading, compact }: Results
 
 const styles = StyleSheet.create({
   contentContainer: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
+    padding: 16,
   },
   
   loadingSpinner: {

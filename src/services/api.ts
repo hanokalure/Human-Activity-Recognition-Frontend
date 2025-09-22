@@ -5,22 +5,11 @@
 
 import { ActivityPrediction, VideoUploadResponse, WSMessage, UploadProgress } from '../types';
 
-// Configuration
-// Use environment variable or fallback to localhost for development
-const getApiBaseUrl = () => {
-  // Always check environment variable first
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    console.log('🌐 Using API URL from environment:', process.env.EXPO_PUBLIC_API_URL);
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-  
-  // Fallback to localhost for development
-  console.log('🔧 Falling back to localhost for development');
-  return 'http://localhost:8000';
-};
+// Configuration - Hardcoded Hugging Face Spaces Backend
+const API_BASE_URL = 'https://hanokalure-human-activity-backend.hf.space';
+const WS_BASE_URL = 'wss://hanokalure-human-activity-backend.hf.space';
 
-const API_BASE_URL = getApiBaseUrl();
-const WS_BASE_URL = API_BASE_URL ? API_BASE_URL.replace('http', 'ws') : null;
+console.log('🌐 Using Hugging Face Spaces Backend:', API_BASE_URL);
 
 export class ApiService {
   /**
@@ -30,10 +19,7 @@ export class ApiService {
     fileUri: string,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<VideoUploadResponse> {
-    // Check if API is available
-    if (!API_BASE_URL) {
-      throw new Error('Backend URL not configured. Please set EXPO_PUBLIC_API_URL environment variable.');
-    }
+    // API is hardcoded to Hugging Face Spaces backend
 
     const formData = new FormData();
 
@@ -78,11 +64,6 @@ export class ApiService {
    * Check API health
    */
   static async healthCheck(): Promise<{ status: string; model_loaded: boolean }> {
-    // If no API URL configured, return unhealthy status
-    if (!API_BASE_URL) {
-      throw new Error('Backend URL not configured. Please set EXPO_PUBLIC_API_URL environment variable.');
-    }
-
     const response = await fetch(`${API_BASE_URL}/health`);
     if (!response.ok) {
       throw new Error('API health check failed');
@@ -119,11 +100,6 @@ export class FrameStreamClient {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        if (!WS_BASE_URL) {
-          reject(new Error('WebSocket not available in production'));
-          return;
-        }
-
         this.ws = new WebSocket(`${WS_BASE_URL}/ws/frames`);
         
         this.ws.onopen = () => {

@@ -2,32 +2,16 @@
  * API Configuration for Human Activity Recognition Frontend
  * ========================================================
  * 
- * Handles connection to the backend API with environment-based URLs.
- * Supports both development (localhost) and production (Render) deployments.
+ * Hardcoded configuration for Hugging Face Spaces backend.
+ * All API calls will be made to the deployed HF Spaces instance.
  */
 
-// Backend API URL configuration
-const getApiUrl = (): string => {
-  // Check for environment variable first (set by Vercel)
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  
-  // For Expo web builds, check for NODE_ENV
-  if (process.env.NODE_ENV === 'production') {
-    // Replace with your actual Render backend URL once deployed
-    return 'https://human-activity-api.onrender.com';
-  }
-  
-  // Development fallback
-  return 'http://localhost:8000';
-};
-
+// Backend API URL configuration - Hardcoded to Hugging Face Spaces
 export const API_CONFIG = {
-  BASE_URL: getApiUrl(),
+  BASE_URL: 'https://hanokalure-human-activity-backend.hf.space',
   ENDPOINTS: {
     HEALTH: '/health',
-    PREDICT_VIDEO: '/predict/video',
+    PREDICT_VIDEO: '/predict',
     WEBSOCKET: '/ws/frames',
   },
   TIMEOUT: 30000, // 30 seconds
@@ -77,11 +61,8 @@ export class ApiClient {
 // Export singleton instance
 export const apiClient = new ApiClient();
 
-// Log configuration in development
-if (process.env.NODE_ENV === 'development') {
-  console.log('🔧 API Configuration:', {
-    baseUrl: API_CONFIG.BASE_URL,
-    environment: process.env.NODE_ENV,
-    reactAppApiUrl: process.env.REACT_APP_API_URL,
-  });
-}
+// Log configuration
+console.log('🔧 API Configuration:', {
+  baseUrl: API_CONFIG.BASE_URL,
+  backend: 'Hugging Face Spaces',
+});

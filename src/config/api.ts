@@ -1,12 +1,11 @@
 /**
  * API Configuration
  * 
- * Use EXPO_PUBLIC_API_URL environment variable for backend connection
- * Falls back to localhost for development
+ * Hardcoded to use Hugging Face Spaces backend
  */
 
 export const API_CONFIG = {
-  BASE_URL: process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000",
+  BASE_URL: "https://hanokalure-human-activity-backend.hf.space",
   ENDPOINTS: {
     HEALTH: "/health",
     PREDICT: "/predict",
