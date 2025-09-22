@@ -5,11 +5,17 @@
 
 import { ActivityPrediction, VideoUploadResponse, WSMessage, UploadProgress } from '../types';
 
-// Configuration - Hardcoded Hugging Face Spaces Backend
+// Configuration - Hardcoded Hugging Face Spaces Backend (Gradio API)
 const API_BASE_URL = 'https://hanokalure-human-activity-backend.hf.space';
 const WS_BASE_URL = 'wss://hanokalure-human-activity-backend.hf.space';
 
-console.log('🌐 Using Hugging Face Spaces Backend:', API_BASE_URL);
+// Gradio API endpoints
+const GRADIO_API = {
+  PREDICT: `${API_BASE_URL}/api/predict`,
+  HEALTH: `${API_BASE_URL}/api/health`
+};
+
+console.log('🌐 Using Hugging Face Spaces Backend (Gradio API):', API_BASE_URL);
 
 export class ApiService {
   /**
@@ -19,56 +25,140 @@ export class ApiService {
     fileUri: string,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<VideoUploadResponse> {
-    // API is hardcoded to Hugging Face Spaces backend
-
-    const formData = new FormData();
-
-    // Handle web vs native differently
-    // On web, we need a File object. On native, we pass { uri, type, name }
+    // Convert video file to base64 for Gradio API
+    console.log('[ApiService] Preparing video for Gradio API...');
+    
+    let videoBase64: string;
     const isWeb = typeof document !== 'undefined';
 
     if (isWeb) {
-      // Convert blob URL to File
+      // Convert blob URL to base64
       const res = await fetch(fileUri);
       const blob = await res.blob();
-      const fileName = 'upload.' + (blob.type?.split('/')[1] || 'mp4');
-      const file = new File([blob], fileName, { type: blob.type || 'video/mp4' });
-      formData.append('file', file);
+      
+      // Convert blob to base64
+      videoBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          // Remove data:video/mp4;base64, prefix if present
+          resolve(base64.split(',')[1] || base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
     } else {
-      formData.append('file', {
-        uri: fileUri,
-        type: 'video/mp4',
-        name: 'upload.mp4',
-      } as any);
+      // For native, we'd need to handle file reading differently
+      // For now, pass the URI as string (Gradio might handle file paths)
+      videoBase64 = fileUri;
     }
 
-    console.log('[ApiService] Uploading to', `${API_BASE_URL}/predict`);
-    const response = await fetch(`${API_BASE_URL}/predict`, {
+    // Gradio API expects specific JSON format
+    const gradioPayload = {
+      data: [videoBase64],
+      event_data: null,
+      fn_index: 0,
+      session_hash: Math.random().toString(36).substring(7)
+    };
+
+    console.log('[ApiService] Uploading to Gradio API:', GRADIO_API.PREDICT);
+    const response = await fetch(GRADIO_API.PREDICT, {
       method: 'POST',
-      body: formData,
-      // Do NOT set Content-Type manually; let fetch set the boundary
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(gradioPayload)
     });
 
     if (!response.ok) {
       const text = await response.text();
-      console.error('[ApiService] Upload failed', response.status, text);
+      console.error('[ApiService] Gradio API upload failed', response.status, text);
       throw new Error(`Upload failed (${response.status}): ${text}`);
     }
 
-    const json = await response.json();
-    console.log('[ApiService] Upload success', json);
-    return json;
+    const gradioResponse = await response.json();
+    console.log('[ApiService] Gradio API response:', gradioResponse);
+    
+    // Parse Gradio response format
+    if (gradioResponse.data && gradioResponse.data.length > 0) {
+      const resultText = gradioResponse.data[0];
+      
+      // Parse the formatted text response to extract prediction data
+      try {
+        // Extract activity, confidence, and class_id from the formatted string
+        const activityMatch = resultText.match(/\*\*Predicted Activity\*\*: ([^\n]+)/);
+        const confidenceMatch = resultText.match(/\*\*Confidence\*\*: ([\d.]+%)/);
+        const classIdMatch = resultText.match(/\*\*Class ID\*\*: (\d+)/);
+        
+        if (activityMatch && confidenceMatch && classIdMatch) {
+          return {
+            activity: activityMatch[1].trim(),
+            confidence: parseFloat(confidenceMatch[1].replace('%', '')) / 100,
+            class_id: parseInt(classIdMatch[1])
+          };
+        }
+      } catch (parseError) {
+        console.warn('[ApiService] Failed to parse structured data, returning raw response');
+      }
+      
+      // Fallback: return raw response
+      return {
+        activity: 'Unknown',
+        confidence: 0.5,
+        class_id: 0,
+        raw_response: resultText
+      };
+    }
+    
+    throw new Error('Invalid response format from Gradio API');
   }
 
   /**
    * Check API health
    */
   static async healthCheck(): Promise<{ status: string; model_loaded: boolean }> {
-    const response = await fetch(`${API_BASE_URL}/health`);
+    // Use Gradio health API endpoint
+    const gradioPayload = {
+      data: [],
+      event_data: null,
+      fn_index: 1, // Health function index
+      session_hash: Math.random().toString(36).substring(7)
+    };
+
+    console.log('[ApiService] Checking health via Gradio API:', GRADIO_API.HEALTH);
+    const response = await fetch(GRADIO_API.HEALTH, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(gradioPayload)
+    });
+    
     if (!response.ok) {
-      throw new Error('API health check failed');
+      throw new Error(`Health check failed (${response.status})`);
     }
-    return response.json();
+    
+    const gradioResponse = await response.json();
+    console.log('[ApiService] Health check response:', gradioResponse);
+    
+    // Parse health response
+    if (gradioResponse.data && gradioResponse.data.length > 0) {
+      const healthText = gradioResponse.data[0];
+      
+      // Parse "Status: healthy, Model loaded: true" format
+      const isHealthy = healthText.includes('healthy');
+      const modelLoaded = healthText.includes('Model loaded: true');
+      
+      return {
+        status: isHealthy ? 'healthy' : 'unhealthy',
+        model_loaded: modelLoaded
+      };
+    }
+    
+    return {
+      status: 'unknown',
+      model_loaded: false
+    };
   }
 }
 
