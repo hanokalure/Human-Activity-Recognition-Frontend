@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, Platform, Animated, Easing, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Platform, Animated, Easing, Dimensions, ScrollView } from 'react-native';
 import { ApiService } from './src/services/api';
 import VideoUpload from './src/components/VideoUpload';
 
@@ -97,9 +97,11 @@ export default function App() {
       <StatusBar style="light" />
       
       {/* Content */}
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        <VideoUpload />
-      </Animated.View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator>
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          <VideoUpload />
+        </Animated.View>
+      </ScrollView>
       
     </View>
   );
@@ -190,5 +192,12 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scroll: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
 });

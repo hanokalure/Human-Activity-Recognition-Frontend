@@ -2,9 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Easing, Platform, Dimensions, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { ApiService } from '../services/api';
 import { VideoUploadResponse } from '../types';
 import ResultsDisplay from './ResultsDisplay';
+import QuickStartLottie from './QuickStartLottie';
+import { Audio, Video } from 'expo-av';
 
 const { width, height } = Dimensions.get('window');
 const isMobileSmall = width < 400 && Platform.OS !== 'web';
@@ -16,6 +19,12 @@ export default function VideoUpload() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [showPlayButton, setShowPlayButton] = useState(false);
+  const [muted, setMuted] = useState(Platform.OS !== 'web');
+  const videoRef = useRef<Video | null>(null);
+  const [videoStatus, setVideoStatus] = useState<string>('loading');
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   // Responsive width tracking for mobile vs web layout
   const [screenWidth, setScreenWidth] = useState(width);
@@ -34,6 +43,27 @@ export default function VideoUpload() {
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Auto-play attempt when video URI changes
+    if (videoUri && videoRef.current) {
+      const attemptAutoPlay = async () => {
+        try {
+          console.log('🎬 useEffect: Attempting immediate play...');
+          await videoRef.current?.playAsync();
+          console.log('🎬 useEffect: Immediate play SUCCESS');
+          setVideoPlaying(true);
+          setVideoStatus('playing-muted');
+          setShowPlayButton(Platform.OS !== 'web');
+        } catch (error) {
+          console.log('🎬 useEffect: Immediate play FAILED:', error);
+          setVideoStatus('loaded-paused');
+          setShowPlayButton(true);
+        }
+      };
+      
+      // Small delay to ensure video is ready
+      setTimeout(attemptAutoPlay, 100);
+    }
+    
     // Fade in animation on mount
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -55,7 +85,7 @@ export default function VideoUpload() {
       rotateAnim.stopAnimation();
       rotateAnim.setValue(0);
     }
-  }, [uploading]);
+  }, [uploading, videoUri]);
 
   const selectVideo = async () => {
     try {
@@ -73,6 +103,7 @@ export default function VideoUpload() {
             // Create object URL for ApiService to fetch and convert to blob
             const url = URL.createObjectURL(file);
             setVideoUri(url); // Store for video preview
+            setVideoPlaying(false);
             await uploadVideo(url);
             // Don't revoke URL yet - we need it for video preview
           }
@@ -90,12 +121,58 @@ export default function VideoUpload() {
         setSelectedFile(res.assets[0].name);
         setResult(null);
         setError(null);
-        setVideoUri(res.assets[0].uri); // Store for video preview
-        await uploadVideo(res.assets[0].uri);
+        
+        // Normalize file URI for mobile video preview
+        let normalizedUri = res.assets[0].uri;
+        if (Platform.OS !== 'web') {
+          try {
+            // Ensure proper file:// protocol for mobile
+            if (!normalizedUri.startsWith('file://') && !normalizedUri.startsWith('content://')) {
+              normalizedUri = `file://${normalizedUri}`;
+            }
+            console.log('Original URI:', res.assets[0].uri);
+            console.log('Normalized URI:', normalizedUri);
+          } catch (error) {
+            console.log('URI normalization error:', error);
+          }
+        }
+        
+        setVideoUri(normalizedUri); // Store for video preview
+        setVideoPlaying(false);
+        await uploadVideo(res.assets[0].uri); // Use original URI for upload
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to select video file');
       console.error('Video selection error:', error);
+    }
+  };
+
+  const handlePlayVideo = async () => {
+    try {
+      console.log('🎬 Handle play video called');
+      if (videoRef.current) {
+        console.log('🎬 Video ref exists, attempting to play...');
+        
+        // First try to play
+        const playResult = await videoRef.current.playAsync();
+        console.log('🎬 Play result:', playResult);
+        
+        // Then unmute
+        await videoRef.current.setIsMutedAsync(false);
+        console.log('🎬 Video unmuted');
+        
+        setMuted(false);
+        setVideoPlaying(true);
+        setShowPlayButton(false);
+        setVideoStatus('playing');
+      } else {
+        console.log('🎬 Video ref is null!');
+        setError('Video player not ready. Please try again.');
+      }
+    } catch (error) {
+      console.log('🎬 Manual play error:', error);
+      setError(`Unable to play video: ${error}`);
+      setDebugInfo(`Play error: ${JSON.stringify(error)}`);
     }
   };
 
@@ -163,6 +240,9 @@ export default function VideoUpload() {
           </View>
         )}
 
+        {/* Quick Start Guide - Show when no video selected and not analyzing */}
+        <QuickStartLottie visible={!videoUri && !uploading} />
+
         {/* Video Preview & Results */}
         {videoUri && (
           isSmallScreen ? (
@@ -181,10 +261,43 @@ export default function VideoUpload() {
                     poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='50' font-family='system-ui' font-size='14' fill='%23666' text-anchor='middle' dominant-baseline='middle'%3E▶️%3C/text%3E%3C/svg%3E"
                   />
                 ) : (
-                  <View style={styles.videoPlayerPlaceholder}>
-                    <Text style={styles.videoPlayerText}>Video Preview</Text>
-                    <Text style={styles.videoPlayerSubtext}>▶️ {selectedFile}</Text>
-                  </View>
+                  <Video
+                    ref={(r) => (videoRef.current = r)}
+                    source={{ uri: videoUri }}
+                    style={styles.videoPlayer}
+                    useNativeControls
+                    resizeMode="contain"
+                    shouldPlay={true}
+                    isLooping
+                    usePoster={false}
+                    onError={(error) => {
+                      console.error('Video error:', error);
+                      setError('Failed to load video preview');
+                    }}
+                    onLoadStart={() => console.log('Video loading started')}
+                    onLoad={async (status) => {
+                      console.log('Video loaded successfully:', status);
+                      if (Platform.OS === 'web') {
+                        // Auto-play only on web
+                        try {
+                          await videoRef.current?.setIsLoopingAsync(true);
+                          await videoRef.current?.playAsync();
+                          setVideoPlaying(true);
+                        } catch (e) {
+                          console.log('Auto-play error:', e);
+                        }
+                      } else {
+                        // Mobile: wait for user interaction
+                        setShowPlayButton(true);
+                      }
+                    }}
+                    onPlaybackStatusUpdate={(status) => {
+                      if ('error' in status && status.error) {
+                        console.error('Playback error:', status.error);
+                        setError('Video playback error');
+                      }
+                    }}
+                  />
                 )}
               </View>
               
@@ -212,9 +325,116 @@ export default function VideoUpload() {
                     poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='50' font-family='system-ui' font-size='14' fill='%23666' text-anchor='middle' dominant-baseline='middle'%3E▶️%3C/text%3E%3C/svg%3E"
                   />
                 ) : (
-                  <View style={styles.videoPlayerPlaceholder}>
-                    <Text style={styles.videoPlayerText}>Video Preview</Text>
-                    <Text style={styles.videoPlayerSubtext}>▶️ {selectedFile}</Text>
+                  <View style={styles.videoContainer}>
+                    <Video
+                      ref={(r) => (videoRef.current = r)}
+                      source={{ uri: videoUri }}
+                      style={styles.videoPlayer}
+                      useNativeControls
+                      resizeMode="contain"
+                      shouldPlay={true}
+                      isLooping
+                      isMuted={muted}
+                      usePoster={false}
+                      onError={(error) => {
+                        console.error('🎬 Video error:', error);
+                        setError('Failed to load video preview');
+                        setVideoStatus('error');
+                        setDebugInfo(`Video error: ${JSON.stringify(error)}`);
+                      }}
+                      onLoadStart={() => {
+                        console.log('🎬 Video loading started');
+                        setVideoStatus('loading');
+                      }}
+                      onLoad={async (status) => {
+                        console.log('🎬 Video loaded successfully:', status);
+                        setVideoStatus('loaded');
+                        setDebugInfo(`Load status: ${JSON.stringify(status)}`);
+                        
+                        // Multi-attempt auto-play strategy
+                        if (Platform.OS !== 'web' && videoRef.current) {
+                          const attemptPlay = async (attempt = 1) => {
+                            try {
+                              console.log(`🎬 Auto-play attempt #${attempt}...`);
+                              
+                              // Try different strategies
+                              if (attempt === 1) {
+                                // First attempt: just play
+                                await videoRef.current?.playAsync();
+                              } else if (attempt === 2) {
+                                // Second attempt: ensure muted first
+                                await videoRef.current?.setIsMutedAsync(true);
+                                await videoRef.current?.playAsync();
+                              } else {
+                                // Third attempt: set volume to 0 and play
+                                await videoRef.current?.setVolumeAsync(0);
+                                await videoRef.current?.playAsync();
+                              }
+                              
+                              console.log(`🎬 Auto-play attempt #${attempt} SUCCESS!`);
+                              setVideoPlaying(true);
+                              setVideoStatus('playing-muted');
+                              setShowPlayButton(true); // Show unmute button
+                              
+                            } catch (autoPlayError) {
+                              console.log(`🎬 Auto-play attempt #${attempt} failed:`, autoPlayError);
+                              
+                              if (attempt < 3) {
+                                // Try again after a short delay
+                                setTimeout(() => attemptPlay(attempt + 1), 200 * attempt);
+                              } else {
+                                console.log('🎬 All auto-play attempts failed');
+                                setVideoStatus('loaded-paused');
+                                setShowPlayButton(true); // Show play button instead
+                              }
+                            }
+                          };
+                          
+                          attemptPlay();
+                        } else {
+                          setShowPlayButton(Platform.OS !== 'web' && muted);
+                        }
+                      }}
+                      onPlaybackStatusUpdate={(status) => {
+                        if ('error' in status && status.error) {
+                          console.error('🎬 Playback error:', status.error);
+                          setError('Video playback error');
+                          setVideoStatus('error');
+                        } else if ('isPlaying' in status) {
+                          setVideoPlaying(status.isPlaying || false);
+                          setVideoStatus(status.isPlaying ? 'playing' : 'paused');
+                        }
+                        
+                        // Log detailed status for debugging
+                        if ('positionMillis' in status) {
+                          setDebugInfo(`Status: ${JSON.stringify({
+                            isLoaded: status.isLoaded,
+                            isPlaying: status.isPlaying,
+                            position: status.positionMillis,
+                            duration: status.durationMillis || 0
+                          })}`);
+                        }
+                      }}
+                    />
+                    {showPlayButton && (
+                      <TouchableOpacity 
+                        style={styles.playButton} 
+                        onPress={handlePlayVideo}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.playIcon}>
+                          <Text style={styles.playText}>
+                            {videoStatus === 'playing-muted' ? '🔈' : '▶️'}
+                          </Text>
+                        </View>
+                        <Text style={styles.playButtonText}>
+                          {videoStatus === 'playing-muted' ? 'Tap to Unmute' : 'Tap to Play'}
+                        </Text>
+                        <Text style={styles.debugText}>
+                          Status: {videoStatus}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </View>
@@ -244,8 +464,9 @@ const styles = StyleSheet.create({
     maxWidth: Platform.OS === 'web' ? 1200 : '100%',
     alignSelf: 'center',
     width: '100%',
-    paddingHorizontal: Platform.OS === 'web' ? 40 : 20,
-    paddingBottom: Platform.OS === 'web' ? 60 : 40,
+    paddingHorizontal: Platform.OS === 'web' ? 40 : 16,
+    paddingBottom: Platform.OS === 'web' ? 60 : 20,
+    minHeight: Platform.OS === 'web' ? '100vh' : 'auto',
   },
   header: {
     paddingTop: Platform.OS === 'web' ? 80 : 60,
@@ -350,7 +571,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     width: '100%',
     alignItems: 'stretch',
-    paddingBottom: 32,
+    paddingBottom: Platform.OS === 'web' ? 40 : 20,
   },
   panelSpacing: {
     marginBottom: 16,
@@ -418,6 +639,55 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9ca3af',
     textAlign: 'center',
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  videoContainer: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+  },
+  playButton: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  playIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  playText: {
+    fontSize: 32,
+    marginLeft: 4,
+  },
+  playButtonText: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  debugText: {
+    color: '#ffffff',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
+    opacity: 0.8,
     fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
   },
 });
