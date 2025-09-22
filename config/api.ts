@@ -2,13 +2,13 @@
  * API Configuration for Human Activity Recognition Frontend
  * ========================================================
  * 
- * Hardcoded configuration for Hugging Face Spaces backend.
- * All API calls will be made to the deployed HF Spaces instance.
+ * Configured for local development backend.
+ * All API calls will be made to localhost:8000.
  */
 
 // Backend API URL configuration - Hardcoded to Hugging Face Spaces
 export const API_CONFIG = {
-  BASE_URL: 'https://hanokalure-human-activity-backend.hf.space',
+  BASE_URL: 'http://127.0.0.1:8000',
   ENDPOINTS: {
     HEALTH: '/health',
     PREDICT_VIDEO: '/predict',
