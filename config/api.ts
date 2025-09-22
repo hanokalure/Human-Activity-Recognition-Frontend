@@ -11,7 +11,7 @@ export const API_CONFIG = {
   BASE_URL: 'http://127.0.0.1:8000',
   ENDPOINTS: {
     HEALTH: '/health',
-    PREDICT_VIDEO: '/predict',
+    PREDICT_VIDEO: '/predict/video',
     WEBSOCKET: '/ws/frames',
   },
   TIMEOUT: 30000, // 30 seconds

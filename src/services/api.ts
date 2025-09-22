@@ -37,8 +37,8 @@ export class ApiService {
       } as any);
     }
 
-    console.log('[ApiService] Uploading to', `${API_BASE_URL}/predict`);
-    const response = await fetch(`${API_BASE_URL}/predict`, {
+    console.log('[ApiService] Uploading to', `${API_BASE_URL}/predict/video`);
+    const response = await fetch(`${API_BASE_URL}/predict/video`, {
       method: 'POST',
       body: formData,
       // Let fetch set the multipart boundary automatically
