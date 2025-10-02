@@ -135,7 +135,7 @@ export default function QuickStartLottie({ visible }: QuickStartLottieProps) {
       ]}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Get Started with AI Activity Recognition</Text>
+          <Text style={styles.title}>Get Started with Human Activity Recognition</Text>
           <StatusDot />
         </View>
 
