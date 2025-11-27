@@ -1,19 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Easing, Platform, Dimensions, ScrollView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, Easing, Platform, Dimensions, ScrollView, Image } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import { ApiService } from '../services/api';
 import { VideoUploadResponse } from '../types';
 import ResultsDisplay from './ResultsDisplay';
-import QuickStartLottie from './QuickStartLottie';
 import { Audio, Video } from 'expo-av';
 
 const { width, height } = Dimensions.get('window');
 const isMobileSmall = width < 400 && Platform.OS !== 'web';
 const panelHeight = Platform.OS === 'web' ? 315 : (isMobileSmall ? 200 : 240);
 
-export default function VideoUpload() {
+const collegeLogo = require('../../assets/Guru_Nanak_Dev_Engineering_College,_Bidar_logo.jpg');
+
+type VideoUploadProps = {
+  apiHealthy?: boolean | null;
+};
+
+export default function VideoUpload({ apiHealthy }: VideoUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<VideoUploadResponse | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -25,6 +29,7 @@ export default function VideoUpload() {
   const videoRef = useRef<Video | null>(null);
   const [videoStatus, setVideoStatus] = useState<string>('loading');
   const [debugInfo, setDebugInfo] = useState<string>('');
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   // Responsive width tracking for mobile vs web layout
   const [screenWidth, setScreenWidth] = useState(width);
@@ -200,36 +205,37 @@ export default function VideoUpload() {
     outputRange: ['0deg', '360deg'],
   });
 
+  const currentStep = uploading ? 2 : result ? 3 : 1;
+
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <View style={styles.maxWidthContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>
-            Human Activity Recognition
-          </Text>
-          <Text style={styles.subtitle}>
-            Upload video to detect human activities
-          </Text>
+          <View style={styles.heroBackground}>
+            <Image source={collegeLogo} style={styles.collegeLogo} resizeMode="contain" />
+            <Text style={styles.collegeName}>
+              GURU NANAK DEV ENGINEERING COLLEGE, BIDAR
+            </Text>
+            <Text style={styles.departmentName}>
+              DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING
+            </Text>
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, uploading && styles.buttonDisabled]}
-              onPress={selectVideo}
-              disabled={uploading}
-            >
-              {uploading && (
-                <Animated.View style={[styles.loadingSquare, { transform: [{ rotate: rotateInterpolate }] }]} />
-              )}
-              <Text style={[styles.buttonText, uploading && styles.buttonTextDisabled]}>
-                {uploading ? 'Analyzing...' : 'Select Video'}
-              </Text>
-            </TouchableOpacity>
+            <Text style={styles.title}>
+              Human Activity Recognition
+            </Text>
+            <Text style={styles.subtitle}>
+              Upload video to detect human activities
+            </Text>
 
-            {selectedFile && !uploading && (
-              <Text style={styles.fileSelected}>
-                File selected
-              </Text>
-            )}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.infoButton}
+                onPress={() => setShowInfoModal(true)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.infoButtonText}>View Team &amp; Guide</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -240,8 +246,160 @@ export default function VideoUpload() {
           </View>
         )}
 
-        {/* Quick Start Guide - Show when no video selected and not analyzing */}
-        <QuickStartLottie visible={!videoUri && !uploading} />
+        {/* Stepper */}
+        <View style={styles.stepperContainer}>
+          <View style={styles.stepperItem}>
+            <View
+              style={[
+                styles.stepCircle,
+                currentStep === 1 && styles.stepCircleActive,
+                currentStep > 1 && styles.stepCircleCompleted,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.stepNumber,
+                  (currentStep === 1 || currentStep > 1) && styles.stepNumberActive,
+                ]}
+              >
+                1
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.stepLabel,
+                currentStep >= 1 && styles.stepLabelActive,
+              ]}
+            >
+              Select Video
+            </Text>
+          </View>
+
+          <View style={styles.stepperConnector} />
+
+          <View style={styles.stepperItem}>
+            <View
+              style={[
+                styles.stepCircle,
+                currentStep === 2 && styles.stepCircleActive,
+                currentStep > 2 && styles.stepCircleCompleted,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.stepNumber,
+                  (currentStep === 2 || currentStep > 2) && styles.stepNumberActive,
+                ]}
+              >
+                2
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.stepLabel,
+                currentStep >= 2 && styles.stepLabelActive,
+              ]}
+            >
+              Analyze
+            </Text>
+          </View>
+
+          <View style={styles.stepperConnector} />
+
+          <View style={styles.stepperItem}>
+            <View
+              style={[
+                styles.stepCircle,
+                currentStep === 3 && styles.stepCircleActive,
+                currentStep > 3 && styles.stepCircleCompleted,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.stepNumber,
+                  (currentStep === 3 || currentStep > 3) && styles.stepNumberActive,
+                ]}
+              >
+                3
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.stepLabel,
+                currentStep >= 3 && styles.stepLabelActive,
+              ]}
+            >
+              View Results
+            </Text>
+          </View>
+        </View>
+
+        {/* Step 1: Select Video */}
+        <View style={styles.stepCard}>
+          <Text style={styles.stepCardTitle}>Step 1 — Select Video</Text>
+          <Text style={styles.stepCardSubtitle}>
+            Choose a short clip where the person and their activity are clearly visible.
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.button, uploading && styles.buttonDisabled]}
+            onPress={selectVideo}
+            disabled={uploading}
+          >
+            {uploading && (
+              <Animated.View
+                style={[
+                  styles.loadingSquare,
+                  { transform: [{ rotate: rotateInterpolate }] },
+                ]}
+              />
+            )}
+            <Text style={[styles.buttonText, uploading && styles.buttonTextDisabled]}>
+              {uploading ? 'Analyzing...' : 'Select Video'}
+            </Text>
+          </TouchableOpacity>
+
+          {selectedFile && (
+            <Text style={styles.fileSelected}>Selected: {selectedFile}</Text>
+          )}
+
+          {typeof apiHealthy === 'boolean' && (
+            <View style={styles.apiStatusContainer}>
+              <View
+                style={[
+                  styles.apiStatusDot,
+                  apiHealthy ? styles.apiStatusDotOnline : styles.apiStatusDotOffline,
+                ]}
+              />
+              <Text style={styles.apiStatusText}>
+                Backend: {apiHealthy ? 'Online' : 'Offline'}
+              </Text>
+            </View>
+          )}
+
+        </View>
+        {/* Step 2: Analyze */}
+        <View style={styles.stepCard}>
+          <Text style={styles.stepCardTitle}>Step 2 — Analyze Activities</Text>
+          <Text style={styles.stepCardSubtitle}>
+            Once your video is uploaded, the model will automatically start analyzing it.
+          </Text>
+
+          <Text style={styles.stepStatusText}>
+            {uploading
+              ? 'Status: Analyzing video...'
+              : result
+              ? 'Status: Analysis completed.'
+              : 'Status: Waiting for a video to be uploaded.'}
+          </Text>
+        </View>
+
+        {/* Step 3: View Results */}
+        <View style={styles.stepCard}>
+          <Text style={styles.stepCardTitle}>Step 3 — View Results</Text>
+          <Text style={styles.stepCardSubtitle}>
+            Preview your video and inspect the predicted activities and confidence scores.
+          </Text>
 
         {/* Video Preview & Results */}
         {videoUri && (
@@ -449,6 +607,78 @@ export default function VideoUpload() {
             </View>
           )
         )}
+        </View>
+
+        {/* Project information card */}
+        <View style={styles.projectCard}>
+          <Text style={styles.projectCardTitle}>Project Information</Text>
+          <View style={styles.projectCardColumn}>
+            <View style={styles.projectSection}>
+              <Text style={styles.projectSectionTitle}>Overview</Text>
+              <Text style={styles.projectText}>
+                Human Activity Recognition system that classifies 25 different daily-life activities from video clips and provides confidence scores.
+              </Text>
+            </View>
+
+            <View style={styles.projectSection}>
+              <Text style={styles.projectSectionTitle}>Model</Text>
+              <Text style={styles.projectText}>
+                R(2+1)D Convolutional Neural Network (r2plus1d_18 backbone) optimized for video analysis.
+              </Text>
+              <Text style={styles.projectText}>
+                Input: 16 frames at 112x112 resolution per clip; Output: probabilities over 25 activity classes.
+              </Text>
+            </View>
+
+            <View style={styles.projectSection}>
+              <Text style={styles.projectSectionTitle}>Training</Text>
+              <Text style={styles.projectText}>
+                Trained on a combined subset of UCF-101 and HMDB-51 datasets for 25 activities over 60 epochs.
+              </Text>
+              <Text style={styles.projectText}>
+                Achieved 87.34% validation accuracy using PyTorch-based training.
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {showInfoModal && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>
+                GURU NANAK DEV ENGINEERING COLLEGE, BIDAR
+              </Text>
+              <Text style={styles.modalSubtitle}>
+                DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING
+              </Text>
+
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>HOD</Text>
+                <Text style={styles.modalText}>DR. Anuradha</Text>
+              </View>
+
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Guide</Text>
+                <Text style={styles.modalText}>Prof. John</Text>
+              </View>
+
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Project Team</Text>
+                <Text style={styles.modalText}>Aishwarya Walankar</Text>
+                <Text style={styles.modalText}>Aishwarya</Text>
+                <Text style={styles.modalText}>Akshata Yenkapalli</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowInfoModal(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalCloseText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </Animated.View>
   );
@@ -457,7 +687,7 @@ export default function VideoUpload() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f3f4f6',
   },
   maxWidthContainer: {
     flex: 1,
@@ -472,10 +702,48 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 80 : 60,
     paddingBottom: 40,
   },
+  heroBackground: {
+    borderRadius: 24,
+    paddingVertical: 24,
+    paddingHorizontal: Platform.OS === 'web' ? 32 : 20,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  collegeLogo: {
+    width: Platform.OS === 'web' ? 80 : 72,
+    height: Platform.OS === 'web' ? 80 : 72,
+    borderRadius: 40,
+    alignSelf: 'center',
+    marginBottom: 8,
+  },
+  collegeName: {
+    fontSize: Platform.OS === 'web' ? 14 : 13,
+    fontWeight: '600',
+    letterSpacing: 1,
+    color: '#4b5563',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  departmentName: {
+    fontSize: Platform.OS === 'web' ? 13 : 12,
+    fontWeight: '500',
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
   title: {
     fontSize: Platform.OS === 'web' ? 32 : 28,
     fontWeight: '700',
-    color: '#000000',
+    color: '#0f172a',
     textAlign: 'center',
     marginBottom: 8,
     fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
@@ -483,14 +751,36 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: Platform.OS === 'web' ? 18 : 16,
     fontWeight: '400',
-    color: '#666666',
+    color: '#4b5563',
     textAlign: 'center',
     lineHeight: 24,
     fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
   },
   buttonContainer: {
-    marginTop: 40,
+    marginTop: 32,
     alignItems: 'center',
+  },
+  heroActions: {
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoButton: {
+    marginTop: Platform.OS === 'web' ? 0 : 12,
+    marginLeft: Platform.OS === 'web' ? 12 : 0,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: 'transparent',
+  },
+  infoButtonText: {
+    color: '#1d4ed8',
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
   },
   button: {
     backgroundColor: '#2563eb',
@@ -564,6 +854,58 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     width: '100%',
   },
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  stepperItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  stepperConnector: {
+    width: 32,
+    height: 2,
+    backgroundColor: '#e5e7eb',
+  },
+  stepCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  stepCircleActive: {
+    borderColor: '#1d4ed8',
+    backgroundColor: '#dbeafe',
+  },
+  stepCircleCompleted: {
+    borderColor: '#16a34a',
+    backgroundColor: '#dcfce7',
+  },
+  stepNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  stepNumberActive: {
+    color: '#111827',
+  },
+  stepLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  stepLabelActive: {
+    color: '#111827',
+    fontWeight: '600',
+  },
   scrollContainer: {
     flex: 1,
     marginTop: 20,
@@ -576,17 +918,160 @@ const styles = StyleSheet.create({
   panelSpacing: {
     marginBottom: 16,
   },
+  infoCard: {
+    marginTop: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+  infoCardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#0f172a',
+    marginBottom: 4,
+    textAlign: 'left',
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  infoCardSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 12,
+    textAlign: 'left',
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  stepCard: {
+    marginTop: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+  stepCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0f172a',
+    marginBottom: 6,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  stepCardSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 12,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  stepStatusText: {
+    fontSize: 14,
+    color: '#111827',
+    marginTop: 4,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  apiStatusContainer: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#dbeafe',
+  },
+  apiStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  apiStatusDotOnline: {
+    backgroundColor: '#16a34a',
+  },
+  apiStatusDotOffline: {
+    backgroundColor: '#dc2626',
+  },
+  apiStatusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#0f172a',
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  projectCard: {
+    marginTop: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+  projectCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0f172a',
+    marginBottom: 10,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  projectCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 24,
+  },
+  projectCardColumn: {
+    flexDirection: 'column',
+    gap: 16,
+  },
+  projectSection: {
+    flex: 1,
+  },
+  projectSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  projectText: {
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 18,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
   panelBox: {
     width: '100%',
     height: panelHeight,
     minHeight: panelHeight,
     maxHeight: panelHeight,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: Platform.OS === 'web' ? 2 : 1,
+    borderRadius: 16,
+    borderWidth: Platform.OS === 'web' ? 1 : 1,
     borderColor: '#e5e7eb',
     overflow: 'hidden',
     position: 'relative',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 3,
   },
   panelBoxWeb: {
     flex: 1,
@@ -596,11 +1081,16 @@ const styles = StyleSheet.create({
     minHeight: panelHeight,
     maxHeight: panelHeight,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 2,
+    borderRadius: 16,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
     overflow: 'hidden',
     position: 'relative',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 3,
   },
   videoPlayer: {
     position: 'absolute',
@@ -688,6 +1178,80 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     opacity: 0.8,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: Platform.OS === 'web' ? 'transparent' : 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Platform.OS === 'web' ? 48 : 16,
+    zIndex: 50,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 800 : 560,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingVertical: 28,
+    paddingHorizontal: 28,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 6,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+    textAlign: 'center',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4b5563',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  modalSection: {
+    marginBottom: 14,
+  },
+  modalSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  modalText: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
+    fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
+  },
+  modalCloseButton: {
+    marginTop: 16,
+    alignSelf: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#1d4ed8',
+  },
+  modalCloseText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
     fontFamily: Platform.OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System',
   },
 });

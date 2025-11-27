@@ -99,7 +99,7 @@ export default function App() {
       {/* Content */}
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          <VideoUpload />
+          <VideoUpload apiHealthy={apiHealthy} />
         </Animated.View>
       </ScrollView>
       
@@ -110,13 +110,13 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f3f4f6',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f3f4f6',
   },
   loadingSpinner: {
     width: 40,
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f3f4f6',
   },
   errorContent: {
     alignItems: 'center',
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f3f4f6',
   },
   scrollContent: {
     flexGrow: 1,

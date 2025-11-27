@@ -39,3 +39,30 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Additional Expo / React Native files
+.expo-shared/
+.expo/*
+*.expo.js
+
+# Large / binary artifacts (to keep repo light)
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.iso
+*.dmg
+
+# Video samples (prevent committing large media by accident)
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# ML / model checkpoints (if any end up here by mistake)
+*.pt
+*.pth
+*.onnx
+*.h5
