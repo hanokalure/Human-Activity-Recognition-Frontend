@@ -653,20 +653,20 @@ export default function VideoUpload({ apiHealthy }: VideoUploadProps) {
               </Text>
 
               <View style={styles.modalSection}>
-                <Text style={styles.modalSectionTitle}>HOD</Text>
+                <Text style={styles.modalSectionTitle}>Head of the Department</Text>
                 <Text style={styles.modalText}>DR. Anuradha</Text>
               </View>
 
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>Guide</Text>
-                <Text style={styles.modalText}>Prof. John</Text>
+                <Text style={styles.modalText}>Prof. Johnwesley</Text>
               </View>
 
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>Project Team</Text>
-                <Text style={styles.modalText}>Aishwarya Walankar</Text>
-                <Text style={styles.modalText}>Aishwarya</Text>
-                <Text style={styles.modalText}>Akshata Yenkapalli</Text>
+                <Text style={styles.modalText}>Aishwarya 3GN22CS004</Text>
+                <Text style={styles.modalText}>Aishwarya 3GN22CS005</Text>
+                <Text style={styles.modalText}>Akshata Yenkapalli 3GN22CS006</Text>
               </View>
 
               <TouchableOpacity
